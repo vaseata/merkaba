@@ -22,10 +22,14 @@
   }
 
   #stage-wrapper {
+    /* viewport中央に絶対配置。flexのshrink挙動に依存させないため。
+       JSの transform は必ず `translate(-50%, -50%) scale(N)` の形を保つこと。 */
+    position: absolute;
+    top: 50%;
+    left: 50%;
     width: 1080px;
     height: 1920px;
     transform-origin: center center;
-    position: relative;
   }
 
   #stage {
@@ -458,7 +462,8 @@ function updateStageScale() {
     const scale = Math.min(scaleX, scaleY);
     stageWrapper.style.width = '1080px';
     stageWrapper.style.height = '1920px';
-    stageWrapper.style.transform = `scale(${scale})`;
+    // translate(-50%, -50%) で自身の半分だけ戻して中央寄せ、その後 scale を合成
+    stageWrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;
     stageWrapper.style.transformOrigin = 'center center';
   } else {
     // デスクトップ：従来通り
@@ -467,7 +472,7 @@ function updateStageScale() {
     const scaleX = w / 1080;
     const scaleY = h / 1920;
     const scale = Math.min(scaleX, scaleY) * 0.95;
-    stageWrapper.style.transform = `scale(${scale})`;
+    stageWrapper.style.transform = `translate(-50%, -50%) scale(${scale})`;
   }
 }
 updateStageScale();
