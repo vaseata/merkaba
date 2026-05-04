@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>MERKABA</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #000; }
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  #canvas-container { position: fixed; inset: 0; z-index: 1; }
+
+  /* ★ チェレンコフブルー：高エネルギー荷電粒子の輝き、純粋な電気的シアン */
+  :root {
+    --ui-main: #40d8ff;
+    --ui-bright: #a0f0ff;
+    --ui-dim: rgba(64, 216, 255, 0.45);
+    --ui-glow:
+      0 0 6px rgba(64, 216, 255, 0.65),
+      0 0 18px rgba(0, 180, 240, 0.4);
+  }
+
+  .title-block {
+    position: fixed;
+    top: 28px;
+    left: 28px;
+    z-index: 10;
+    pointer-events: none;
+    color: var(--ui-bright);
+  }
+
+  .title-main {
+    font-size: 56px;
+    font-weight: 900;
+    letter-spacing: -0.025em;
+    line-height: 0.92;
+    text-shadow: var(--ui-glow);
+    text-transform: uppercase;
+  }
+
+  .title-rule {
+    width: 80px;
+    height: 1px;
+    background: var(--ui-main);
+    margin: 14px 0 10px 0;
+    box-shadow: 0 0 4px var(--ui-main);
+  }
+
+  .title-sub {
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.2em;
+    line-height: 1.6;
+    color: var(--ui-main);
+    text-transform: uppercase;
+    text-shadow: 0 0 3px rgba(64, 216, 255, 0.5);
+  }
+
+  .title-attribution {
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    color: var(--ui-dim);
+    margin-top: 6px;
+    text-transform: uppercase;
+  }
+
+  .meta-block {
+    position: fixed;
+    top: 28px;
+    right: 28px;
+    z-index: 10;
+    pointer-events: none;
+    color: var(--ui-main);
+    text-align: right;
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    line-height: 1.7;
+    text-transform: uppercase;
+    text-shadow: 0 0 3px rgba(64, 216, 255, 0.5);
+  }
+
+  .meta-block .label {
+    color: var(--ui-dim);
+    margin-bottom: 2px;
+  }
+
+  .meta-block .value {
+    color: var(--ui-bright);
+    font-weight: 700;
+  }
+
+  .controls-block {
+    position: fixed;
+    bottom: 28px;
+    left: 28px;
+    z-index: 10;
+    pointer-events: none;
+    color: var(--ui-main);
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    line-height: 1.7;
+    text-transform: uppercase;
+    text-shadow: 0 0 3px rgba(64, 216, 255, 0.5);
+  }
+
+  .code-block {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 10;
+    pointer-events: none;
+    color: var(--ui-dim);
+    font-size: 8px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    line-height: 1.7;
+    text-align: right;
+    text-transform: uppercase;
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  }
+
+  @media (max-width: 600px) {
+    .title-block { top: 20px; left: 20px; }
+    .title-main { font-size: 38px; }
+    .meta-block { top: 20px; right: 20px; }
+    .controls-block { bottom: 20px; left: 20px; }
+    .code-block { bottom: 20px; right: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="canvas-container"></div>
+
+<div class="title-block">
+  <div class="title-main">Merkaba</div>
+  <div class="title-rule"></div>
+  <div class="title-sub">
+    Stella Octangula / 9 Spheres / 12 Edges
+  </div>
+  <div class="title-attribution">
+    Kepler, 1609
+  </div>
+</div>
+
+<div class="meta-block">
+  <div class="label">Project File</div>
+  <div class="value">Sacred Geometry / 02</div>
+</div>
+
+<div class="controls-block">
+  Drag · Pinch · Wheel
+</div>
+
+<div class="code-block">
+  Slr-208 / Asc-217
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script>
+const container = document.getElementById('canvas-container');
+const scene = new THREE.Scene();
+// ★ フォグ：純粋なシアン（紫を排除）
+scene.fog = new THREE.Fog(0x041a30, 4, 11);
+
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.01, 200);
+camera.position.set(0, 0, 5);
+camera.lookAt(0, 0, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setClearColor(0x000000, 1);
+container.appendChild(renderer.domElement);
+
+// ============================================================
+// スカイドーム：純粋な冷色シアン系（紫成分排除）
+// 上＝ほぼ黒の深ティール、中＝深シアン、下＝深ティールブルー
+// ★赤成分を最小化、緑成分を僅かに増やしてシアン寄りに
+// ============================================================
+const skyGeometry = new THREE.SphereGeometry(80, 32, 32);
+const skyMaterial = new THREE.ShaderMaterial({
+  uniforms: { cameraWorldPos: { value: new THREE.Vector3() } },
+  vertexShader: `
+    varying vec3 vWorldPos;
+    void main() {
+      vec4 worldPos = modelMatrix * vec4(position, 1.0);
+      vWorldPos = worldPos.xyz;
+      gl_Position = projectionMatrix * viewMatrix * worldPos;
+    }
+  `,
+  fragmentShader: `
+    varying vec3 vWorldPos;
+    void main() {
+      float h = clamp(vWorldPos.y / 60.0, -1.0, 1.0);
+      float vertical = (h + 1.0) * 0.5;
+      // ★純粋な冷色シアン系（赤成分を最小化）
+      vec3 colorBottom = vec3(0.040, 0.137, 0.196);  // 深ティールブルー（下）
+      vec3 colorMid    = vec3(0.020, 0.078, 0.137);  // 深シアン（中）
+      vec3 colorTop    = vec3(0.000, 0.020, 0.040);  // ほぼ黒の深ティール（上）
+      vec3 color;
+      if (vertical < 0.4) {
+        color = mix(colorBottom, colorMid, smoothstep(0.0, 0.4, vertical));
+      } else {
+        color = mix(colorMid, colorTop, smoothstep(0.4, 1.0, vertical));
+      }
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `,
+  side: THREE.BackSide,
+  depthWrite: false,
+  fog: false,
+});
+scene.add(new THREE.Mesh(skyGeometry, skyMaterial));
+
+const composer = new THREE.EffectComposer(renderer);
+composer.addPass(new THREE.RenderPass(scene, camera));
+composer.addPass(new THREE.UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  0.9,
+  0.7,
+  0.55
+));
+
+const vertices = [];
+vertices.push(new THREE.Vector3(0, 0, 0));
+const a = 1;
+vertices.push(new THREE.Vector3( a,  a,  a));
+vertices.push(new THREE.Vector3( a, -a, -a));
+vertices.push(new THREE.Vector3(-a,  a, -a));
+vertices.push(new THREE.Vector3(-a, -a,  a));
+vertices.push(new THREE.Vector3(-a, -a, -a));
+vertices.push(new THREE.Vector3(-a,  a,  a));
+vertices.push(new THREE.Vector3( a, -a,  a));
+vertices.push(new THREE.Vector3( a,  a, -a));
+
+const tetraUpIndices   = [1, 2, 3, 4];
+const tetraDownIndices = [5, 6, 7, 8];
+
+const sphereRadius = Math.SQRT2 / 2;
+
+const sphereMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    colorA: { value: new THREE.Color(0xffffff) },
+    // ★球のシアンを冷色寄りに（赤味抑えて青緑へ）
+    colorB: { value: new THREE.Color(0x4090c8) },
+    fogColor: { value: scene.fog.color },
+    fogNear: { value: scene.fog.near },
+    fogFar: { value: scene.fog.far },
+  },
+  vertexShader: `
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+    varying vec3 vLocalPos;
+    void main() {
+      vLocalPos = position;
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      vViewPosition = -mvPosition.xyz;
+      vNormal = normalize(normalMatrix * normal);
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 colorA;
+    uniform vec3 colorB;
+    uniform vec3 fogColor;
+    uniform float fogNear;
+    uniform float fogFar;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+    varying vec3 vLocalPos;
+    float hash(vec3 p) {
+      p = fract(p * vec3(443.897, 441.423, 437.195));
+      p += dot(p, p.yzx + 19.19);
+      return fract((p.x + p.y) * p.z);
+    }
+    float noise3d(vec3 p) {
+      vec3 i = floor(p);
+      vec3 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x),
+            mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+        mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
+            mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y),
+        f.z
+      );
+    }
+    void main() {
+      vec3 viewDir = normalize(vViewPosition);
+      float fresnel = 1.0 - abs(dot(viewDir, vNormal));
+      fresnel = pow(fresnel, 1.5);
+      float gradT = vNormal.y * 0.5 + 0.5;
+      vec3 baseColor = mix(colorA, colorB, gradT);
+      float n1 = noise3d(vLocalPos * 25.0);
+      float n2 = noise3d(vLocalPos * 60.0);
+      float grain = (n1 * 0.6 + n2 * 0.4);
+      vec3 finalColor = baseColor * (0.5 + grain * 0.8);
+      finalColor += baseColor * fresnel * 0.6;
+      float alpha = mix(0.08, 0.32, fresnel);
+      alpha *= (0.7 + grain * 0.5);
+      float fogDistance = length(vViewPosition);
+      float fogFactor = smoothstep(fogNear, fogFar, fogDistance);
+      finalColor = mix(finalColor, fogColor, fogFactor);
+      alpha *= (1.0 - fogFactor);
+      gl_FragColor = vec4(finalColor, alpha);
+    }
+  `,
+  transparent: true,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+  blending: THREE.NormalBlending,
+});
+
+const sphereGroup = new THREE.Group();
+vertices.forEach((v) => {
+  const sphere = new THREE.Mesh(new THREE.SphereGeometry(sphereRadius, 48, 32), sphereMaterial);
+  sphere.position.copy(v);
+  sphere.renderOrder = 2;
+  sphereGroup.add(sphere);
+});
+
+const edgeGroup = new THREE.Group();
+const edgeMaterial = new THREE.LineBasicMaterial({
+  // ★エッジを硬質な冷色に（明度を抑えて、青緑寄りに）
+  color: 0x80c8e8,
+  transparent: true,
+  opacity: 0.7,
+  fog: true,
+  depthTest: false,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+});
+
+function tetraEdges(indices) {
+  const edges = [];
+  for (let i = 0; i < indices.length; i++) {
+    for (let j = i + 1; j < indices.length; j++) {
+      edges.push([indices[i], indices[j]]);
+    }
+  }
+  return edges;
+}
+
+tetraEdges(tetraUpIndices).forEach(([i, j]) => {
+  const geom = new THREE.BufferGeometry().setFromPoints([vertices[i], vertices[j]]);
+  const line = new THREE.Line(geom, edgeMaterial);
+  line.renderOrder = 1;
+  edgeGroup.add(line);
+});
+tetraEdges(tetraDownIndices).forEach(([i, j]) => {
+  const geom = new THREE.BufferGeometry().setFromPoints([vertices[i], vertices[j]]);
+  const line = new THREE.Line(geom, edgeMaterial);
+  line.renderOrder = 1;
+  edgeGroup.add(line);
+});
+
+// ★頂点グローも冷色寄りに調整（赤成分を抑える）
+function createVertexGlowTexture() {
+  const size = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const cx = size / 2, cy = size / 2;
+
+  let gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, size / 2);
+  gradient.addColorStop(0.00, 'rgba(160, 220, 250, 0.85)');     // 中心：冷たい白青
+  gradient.addColorStop(0.05, 'rgba(120, 200, 245, 0.75)');     // 即座にアイスブルーへ
+  gradient.addColorStop(0.15, 'rgba(80, 175, 235, 0.55)');      // 明アイスブルー
+  gradient.addColorStop(0.30, 'rgba(50, 145, 220, 0.30)');      // 深アイスブルー
+  gradient.addColorStop(0.50, 'rgba(30, 115, 200, 0.12)');      // 拡散
+  gradient.addColorStop(0.75, 'rgba(15, 90, 175, 0.04)');
+  gradient.addColorStop(1.00, 'rgba(0, 70, 150, 0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.save();
+  ctx.translate(cx, cy);
+  for (let i = 0; i < 2; i++) {
+    ctx.rotate(Math.PI / 2);
+    const lineGrad = ctx.createLinearGradient(-cx, 0, cx, 0);
+    lineGrad.addColorStop(0.00, 'rgba(120, 200, 250, 0)');
+    lineGrad.addColorStop(0.40, 'rgba(120, 200, 250, 0)');
+    lineGrad.addColorStop(0.48, 'rgba(160, 220, 250, 0.4)');
+    lineGrad.addColorStop(0.50, 'rgba(200, 235, 255, 0.6)');
+    lineGrad.addColorStop(0.52, 'rgba(160, 220, 250, 0.4)');
+    lineGrad.addColorStop(0.60, 'rgba(120, 200, 250, 0)');
+    lineGrad.addColorStop(1.00, 'rgba(120, 200, 250, 0)');
+    ctx.fillStyle = lineGrad;
+    ctx.fillRect(-cx, -2, size, 4);
+  }
+  ctx.restore();
+
+  gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 0.025);
+  gradient.addColorStop(0.0, 'rgba(200, 235, 255, 0.7)');
+  gradient.addColorStop(1.0, 'rgba(160, 220, 250, 0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+
+  return new THREE.CanvasTexture(canvas);
+}
+
+const vertexGlowMaterial = new THREE.SpriteMaterial({
+  map: createVertexGlowTexture(),
+  transparent: true,
+  opacity: 1.0,
+  blending: THREE.AdditiveBlending,
+  depthTest: false,
+  depthWrite: false,
+});
+
+const vertexGlowGroup = new THREE.Group();
+vertices.forEach((v) => {
+  const sprite = new THREE.Sprite(vertexGlowMaterial);
+  sprite.position.copy(v);
+  sprite.scale.set(1.4, 1.4, 1.4);
+  sprite.renderOrder = 5;
+  vertexGlowGroup.add(sprite);
+});
+
+function createEdgeGlowTexture() {
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const cx = size / 2, cy = size / 2;
+
+  const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, size / 2);
+  gradient.addColorStop(0.00, 'rgba(100, 175, 225, 0.20)');
+  gradient.addColorStop(0.30, 'rgba(70, 145, 205, 0.10)');
+  gradient.addColorStop(0.60, 'rgba(40, 115, 185, 0.03)');
+  gradient.addColorStop(1.00, 'rgba(30, 100, 180, 0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+
+  return new THREE.CanvasTexture(canvas);
+}
+
+const edgeGlowMaterial = new THREE.SpriteMaterial({
+  map: createEdgeGlowTexture(),
+  transparent: true,
+  opacity: 1.0,
+  blending: THREE.AdditiveBlending,
+  depthTest: false,
+  depthWrite: false,
+});
+
+const edgeGlowGroup = new THREE.Group();
+function addEdgeGlows(indices) {
+  tetraEdges(indices).forEach(([i, j]) => {
+    const a = vertices[i], b = vertices[j];
+    const mid = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5);
+    const sprite = new THREE.Sprite(edgeGlowMaterial);
+    sprite.position.copy(mid);
+    sprite.scale.set(1.2, 1.2, 1.2);
+    sprite.renderOrder = 4;
+    edgeGlowGroup.add(sprite);
+  });
+}
+addEdgeGlows(tetraUpIndices);
+addEdgeGlows(tetraDownIndices);
+
+const rootGroup = new THREE.Group();
+rootGroup.add(edgeGlowGroup);
+rootGroup.add(edgeGroup);
+rootGroup.add(sphereGroup);
+rootGroup.add(vertexGlowGroup);
+scene.add(rootGroup);
+
+let rotX = 0.3, rotY = 0.5;
+let targetRotX = rotX, targetRotY = rotY;
+let isDragging = false;
+let prevX = 0, prevY = 0;
+let cameraDistance = 5;
+let targetDistance = 5;
+const minDistance = 0.3, maxDistance = 12;
+const canvas = renderer.domElement;
+
+canvas.addEventListener('mousedown', (e) => {
+  isDragging = true; prevX = e.clientX; prevY = e.clientY;
+});
+canvas.addEventListener('mousemove', (e) => {
+  if (!isDragging) return;
+  targetRotY += (e.clientX - prevX) * 0.005;
+  targetRotX += (e.clientY - prevY) * 0.005;
+  prevX = e.clientX; prevY = e.clientY;
+});
+window.addEventListener('mouseup', () => { isDragging = false; });
+
+canvas.addEventListener('wheel', (e) => {
+  e.preventDefault();
+  targetDistance = Math.max(minDistance, Math.min(maxDistance, targetDistance + e.deltaY * 0.005));
+}, { passive: false });
+
+let touchStartDist = 0, touchStartCameraDist = 0;
+canvas.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 1) {
+    isDragging = true;
+    prevX = e.touches[0].clientX; prevY = e.touches[0].clientY;
+  } else if (e.touches.length === 2) {
+    isDragging = false;
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    touchStartDist = Math.sqrt(dx * dx + dy * dy);
+    touchStartCameraDist = targetDistance;
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  if (e.touches.length === 1 && isDragging) {
+    targetRotY += (e.touches[0].clientX - prevX) * 0.005;
+    targetRotX += (e.touches[0].clientY - prevY) * 0.005;
+    prevX = e.touches[0].clientX; prevY = e.touches[0].clientY;
+  } else if (e.touches.length === 2) {
+    const dx = e.touches[0].clientX - e.touches[1].clientX;
+    const dy = e.touches[0].clientY - e.touches[1].clientY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    targetDistance = Math.max(minDistance, Math.min(maxDistance, touchStartCameraDist * (touchStartDist / dist)));
+  }
+}, { passive: false });
+
+canvas.addEventListener('touchend', () => { isDragging = false; });
+
+function animate() {
+  requestAnimationFrame(animate);
+  rotX += (targetRotX - rotX) * 0.08;
+  rotY += (targetRotY - rotY) * 0.08;
+  rootGroup.rotation.x = rotX;
+  rootGroup.rotation.y = rotY;
+  cameraDistance += (targetDistance - cameraDistance) * 0.08;
+  camera.position.set(0, 0, cameraDistance);
+  camera.lookAt(0, 0, 0);
+  if (!isDragging) targetRotY += 0.0008;
+  composer.render();
+}
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
