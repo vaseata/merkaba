@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Merkaba">
+<meta name="theme-color" content="#000000">
+<title>MERKABA — Demo Reel</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: #000;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #stage-wrapper {
+    width: 1080px;
+    height: 1920px;
+    transform-origin: center center;
+    position: relative;
+  }
+
+  #stage {
+    position: absolute;
+    inset: 0;
+    width: 1080px;
+    height: 1920px;
+    background: #000;
+    overflow: hidden;
+  }
+
+  #canvas-container {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  /* ============================================================
+     Instagram Reels Safe Zone Guide (2026)
+     - 上 108px: ステータスバー、ハンドル
+     - 下 320px: キャプション、オーディオ、ティッカー（最も危険）
+     - 左 60px: わずかなクロップ
+     - 右 120px: いいね/コメント/シェア/メニュー
+     - Safe Area: 900×1492px
+     全UI要素はこの範囲内に配置
+     ============================================================ */
+
+  /* ★ チェレンコフブルー UI */
+  :root {
+    --ui-main: #40d8ff;
+    --ui-bright: #a0f0ff;
+    --ui-dim: rgba(64, 216, 255, 0.45);
+    --ui-glow:
+      0 0 6px rgba(64, 216, 255, 0.65),
+      0 0 18px rgba(0, 180, 240, 0.4);
+
+    /* Safe Zone 定数 */
+    --safe-top: 140px;      /* 上端マージン（必要108 + 余白32） */
+    --safe-bottom: 340px;   /* 下端マージン（必要320 + 余白20） */
+    --safe-left: 80px;      /* 左マージン（必要60 + 余白20） */
+    --safe-right: 140px;    /* 右マージン（必要120 + 余白20） */
+  }
+
+  /* ★ Safe Zone の可視化（開発時のみ、録画前に削除） */
+  #safe-zone-guide {
+    position: absolute;
+    top: var(--safe-top);
+    left: var(--safe-left);
+    right: var(--safe-right);
+    bottom: var(--safe-bottom);
+    border: 1px dashed rgba(255, 255, 0, 0.3);
+    pointer-events: none;
+    z-index: 50;
+    display: none;  /* デフォルト非表示、Gボタンで切替 */
+  }
+  #safe-zone-guide.visible {
+    display: block;
+  }
+  #safe-zone-guide::before {
+    content: 'INSTAGRAM REELS SAFE ZONE (900×1492)';
+    position: absolute;
+    top: -20px;
+    left: 0;
+    color: rgba(255, 255, 0, 0.5);
+    font-family: monospace;
+    font-size: 11px;
+  }
+
+  /* UI共通 */
+  .ui-element {
+    opacity: 0;
+    transition: opacity 1.5s ease-out;
+    pointer-events: none;
+  }
+  .ui-element.visible {
+    opacity: 1;
+  }
+
+  /* ★ タイトル：Safe Zone 内に配置 */
+  .title-block {
+    position: absolute;
+    top: var(--safe-top);
+    left: var(--safe-left);
+    right: 50%;  /* 横幅の半分まで（右側はメタ用に空ける） */
+    z-index: 10;
+    color: var(--ui-bright);
+  }
+
+  .title-main {
+    font-size: 88px;
+    font-weight: 900;
+    letter-spacing: -0.025em;
+    line-height: 0.92;
+    text-shadow: var(--ui-glow);
+    text-transform: uppercase;
+  }
+
+  .title-rule {
+    width: 140px;
+    height: 2px;
+    background: var(--ui-main);
+    margin: 22px 0 18px 0;
+    box-shadow: 0 0 6px var(--ui-main);
+  }
+
+  .title-sub {
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 0.22em;
+    line-height: 1.7;
+    color: var(--ui-main);
+    text-transform: uppercase;
+    text-shadow: 0 0 4px rgba(64, 216, 255, 0.5);
+  }
+
+  .title-attribution {
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.24em;
+    color: var(--ui-dim);
+    margin-top: 14px;
+    text-transform: uppercase;
+  }
+
+  /* ★ 右上：メタ（Safe Zone 内に配置） */
+  .meta-block {
+    position: absolute;
+    top: var(--safe-top);
+    right: var(--safe-right);
+    z-index: 10;
+    color: var(--ui-main);
+    text-align: right;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.24em;
+    line-height: 1.8;
+    text-transform: uppercase;
+    text-shadow: 0 0 4px rgba(64, 216, 255, 0.5);
+  }
+
+  .meta-block .label {
+    color: var(--ui-dim);
+    margin-bottom: 4px;
+  }
+
+  .meta-block .value {
+    color: var(--ui-bright);
+    font-weight: 700;
+  }
+
+  /* ★ 左下：URL（Safe Zone の下端に配置、リール用最重要要素） */
+  .url-block {
+    position: absolute;
+    bottom: var(--safe-bottom);
+    left: var(--safe-left);
+    right: var(--safe-right);
+    z-index: 10;
+    color: var(--ui-bright);
+  }
+
+  .url-prefix {
+    font-size: 13px;
+    color: var(--ui-dim);
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    font-family: 'Helvetica Neue', sans-serif;
+    font-weight: 500;
+  }
+
+  .url-text {
+    /* Safe Zone 横幅 = 900 - 80 - 140 = 680px に収まるサイズ */
+    /* 'vaseata.github.io/merkaba' は25文字 → font-size 約28pxで収まる */
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.0;
+    text-transform: lowercase;
+    text-shadow: 0 0 8px rgba(64, 216, 255, 0.65);
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    color: var(--ui-bright);
+    white-space: nowrap;  /* 改行禁止 */
+  }
+
+  /* ★ 右下：コード（URLの上、Safe Zone 内） */
+  .code-block {
+    position: absolute;
+    /* URLブロックの上に配置（URL高さ約60px + 余白30px = 90px上） */
+    bottom: calc(var(--safe-bottom) + 110px);
+    right: var(--safe-right);
+    z-index: 10;
+    color: var(--ui-dim);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.24em;
+    line-height: 1.7;
+    text-align: right;
+    text-transform: uppercase;
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+  }
+
+  /* デバッグ情報 */
+  #debug-timer {
+    position: absolute;
+    top: 20px; left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.4);
+    font-family: monospace;
+    font-size: 14px;
+    z-index: 100;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+
+  /* 操作UI（Stage外） */
+  #start-btn {
+    position: fixed;
+    top: 20px; right: 20px;
+    z-index: 1000;
+    background: rgba(64, 216, 255, 0.2);
+    color: #40d8ff;
+    border: 1px solid #40d8ff;
+    padding: 10px 18px;
+    cursor: pointer;
+    font-family: monospace;
+    font-size: 13px;
+    border-radius: 4px;
+    backdrop-filter: blur(10px);
+  }
+  #start-btn:hover {
+    background: rgba(64, 216, 255, 0.4);
+  }
+  #start-btn.recording {
+    background: rgba(255, 64, 64, 0.3);
+    color: #ff8080;
+    border-color: #ff8080;
+  }
+
+  #guide-btn {
+    position: fixed;
+    top: 20px; right: 200px;
+    z-index: 1000;
+    background: rgba(255, 255, 0, 0.15);
+    color: #ffff80;
+    border: 1px solid #ffff80;
+    padding: 10px 18px;
+    cursor: pointer;
+    font-family: monospace;
+    font-size: 13px;
+    border-radius: 4px;
+    backdrop-filter: blur(10px);
+  }
+  #guide-btn:hover {
+    background: rgba(255, 255, 0, 0.3);
+  }
+
+  #info-text {
+    position: fixed;
+    top: 20px; left: 20px;
+    z-index: 1000;
+    color: rgba(255, 255, 255, 0.6);
+    font-family: monospace;
+    font-size: 11px;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 8px 12px;
+    border-radius: 4px;
+    line-height: 1.6;
+  }
+
+  /* ============================================================
+     ★ iPhone 録画モード（URLに ?mobile=1 を付けると有効）
+     - デバッグUI完全非表示
+     - Stage を画面いっぱいに表示
+     - タップで START / STOP
+     - 録画用に最適化
+     ============================================================ */
+  body.mobile-mode {
+    /* iOS Safari の余白を完全排除 */
+    padding: env(safe-area-inset-top) env(safe-area-inset-right)
+             env(safe-area-inset-bottom) env(safe-area-inset-left);
+    /* タップ時のハイライト無効化 */
+    -webkit-tap-highlight-color: transparent;
+    /* ピンチズーム禁止 */
+    touch-action: manipulation;
+  }
+
+  body.mobile-mode #stage-wrapper {
+    /* JSで動的サイズ設定するが、デフォルトで全画面 */
+    width: 100vw;
+    height: 100vh;
+    transform: none !important;  /* スケール変換は不要（直接サイズ調整） */
+  }
+
+  body.mobile-mode #stage {
+    width: 100%;
+    height: 100%;
+  }
+
+  /* モバイルモードでは全デバッグUIを完全非表示 */
+  body.mobile-mode #start-btn,
+  body.mobile-mode #guide-btn,
+  body.mobile-mode #info-text,
+  body.mobile-mode #debug-timer,
+  body.mobile-mode #safe-zone-guide {
+    display: none !important;
+  }
+
+  /* モバイルモード初期メッセージ */
+  #mobile-tap-hint {
+    display: none;
+    position: fixed;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 200;
+    color: rgba(64, 216, 255, 0.7);
+    font-family: 'SF Mono', 'Menlo', monospace;
+    font-size: 14px;
+    letter-spacing: 0.2em;
+    text-align: center;
+    pointer-events: none;
+    text-shadow: 0 0 10px rgba(64, 216, 255, 0.5);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+
+  body.mobile-mode #mobile-tap-hint {
+    display: block;
+  }
+
+  body.mobile-mode #mobile-tap-hint.hidden {
+    display: none;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50%      { opacity: 0.9; }
+  }
+</style>
+</head>
+<body>
+
+<button id="start-btn">▶ START DEMO</button>
+<button id="guide-btn">⊞ TOGGLE SAFE ZONE</button>
+<div id="info-text">
+  Stage: 1080×1920 (実寸)<br>
+  Safe Zone: 900×1492 (Reels 2026)<br>
+  Margins: 上140 / 下340 / 左80 / 右140<br>
+  SPACE: 開始/停止 | G: ガイド表示
+</div>
+
+<div id="stage-wrapper">
+  <div id="stage">
+    <div id="canvas-container"></div>
+    <div id="debug-timer">0.00s</div>
+
+    <!-- モバイルモード用タップヒント -->
+    <div id="mobile-tap-hint">TAP TO START</div>
+
+    <!-- Safe Zone ガイド（録画前にOFFにする） -->
+    <div id="safe-zone-guide"></div>
+
+    <!-- タイトル -->
+    <div class="ui-element title-block" id="ui-title">
+      <div class="title-main">Merkaba</div>
+      <div class="title-rule"></div>
+      <div class="title-sub">
+        Stella Octangula<br>
+        9 Spheres / 12 Edges
+      </div>
+      <div class="title-attribution">
+        Kepler, 1609
+      </div>
+    </div>
+
+    <!-- 右上：メタ -->
+    <div class="ui-element meta-block" id="ui-meta">
+      <div class="label">Project File</div>
+      <div class="value">Sacred<br>Geometry / 02</div>
+    </div>
+
+    <!-- 左下：URL -->
+    <div class="ui-element url-block" id="ui-url">
+      <div class="url-prefix">Experience the artwork</div>
+      <div class="url-text">vaseata.github.io/merkaba</div>
+    </div>
+
+    <!-- 右下：コード -->
+    <div class="ui-element code-block" id="ui-code">
+      Slr-208 / Asc-217
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
+<script>
+// ============================================================
+// ★ モバイル録画モード判定
+// URLに ?mobile=1 が含まれていれば有効
+// ============================================================
+const urlParams = new URLSearchParams(window.location.search);
+const isMobileMode = urlParams.get('mobile') === '1';
+if (isMobileMode) {
+  document.body.classList.add('mobile-mode');
+}
+
+const stageWrapper = document.getElementById('stage-wrapper');
+const container = document.getElementById('canvas-container');
+const timerEl = document.getElementById('debug-timer');
+const startBtn = document.getElementById('start-btn');
+const guideBtn = document.getElementById('guide-btn');
+const safeGuide = document.getElementById('safe-zone-guide');
+const mobileTapHint = document.getElementById('mobile-tap-hint');
+
+// ============================================================
+// Stage スケーリング（デスクトップ vs モバイル）
+// ============================================================
+function updateStageScale() {
+  if (isMobileMode) {
+    // モバイル：画面いっぱいにStageを配置
+    // Stage内部は1080×1920基準のままで、表示時にスケール
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const scaleX = w / 1080;
+    const scaleY = h / 1920;
+    // 画面に収まる方を選択（letterboxを避けて画面いっぱいにするなら max を使う）
+    // iPhone のアスペクト比は ~19.5:9 ≈ 0.46、9:16 = 0.5625
+    // よって縦長 iPhone では横方向に余白ができる → Math.max で全画面を埋める
+    // ただし完全な9:16より横長になるので、上下が少し切れる
+    // → Reels用に9:16を保つには Math.min を使う
+    const scale = Math.min(scaleX, scaleY);
+    stageWrapper.style.width = '1080px';
+    stageWrapper.style.height = '1920px';
+    stageWrapper.style.transform = `scale(${scale})`;
+    stageWrapper.style.transformOrigin = 'center center';
+  } else {
+    // デスクトップ：従来通り
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    const scaleX = w / 1080;
+    const scaleY = h / 1920;
+    const scale = Math.min(scaleX, scaleY) * 0.95;
+    stageWrapper.style.transform = `scale(${scale})`;
+  }
+}
+updateStageScale();
+window.addEventListener('resize', updateStageScale);
+window.addEventListener('orientationchange', () => {
+  setTimeout(updateStageScale, 100);
+});
+
+// Safe Zone ガイド切替（デスクトップのみ）
+if (!isMobileMode) {
+  guideBtn.addEventListener('click', () => {
+    safeGuide.classList.toggle('visible');
+  });
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'g' || e.key === 'G') {
+      safeGuide.classList.toggle('visible');
+    }
+  });
+}
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0x041a30, 4, 11);
+
+const camera = new THREE.PerspectiveCamera(50, 1080 / 1920, 0.01, 200);
+camera.position.set(0, 0, 9);
+camera.lookAt(0, 0, 0);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(1080, 1920);
+renderer.setClearColor(0x000000, 1);
+container.appendChild(renderer.domElement);
+
+renderer.domElement.style.width = '100%';
+renderer.domElement.style.height = '100%';
+renderer.domElement.style.display = 'block';
+
+// === スカイドーム ===
+const skyGeometry = new THREE.SphereGeometry(80, 32, 32);
+const skyMaterial = new THREE.ShaderMaterial({
+  uniforms: { cameraWorldPos: { value: new THREE.Vector3() } },
+  vertexShader: `
+    varying vec3 vWorldPos;
+    void main() {
+      vec4 worldPos = modelMatrix * vec4(position, 1.0);
+      vWorldPos = worldPos.xyz;
+      gl_Position = projectionMatrix * viewMatrix * worldPos;
+    }
+  `,
+  fragmentShader: `
+    varying vec3 vWorldPos;
+    void main() {
+      float h = clamp(vWorldPos.y / 60.0, -1.0, 1.0);
+      float vertical = (h + 1.0) * 0.5;
+      vec3 colorBottom = vec3(0.040, 0.137, 0.196);
+      vec3 colorMid    = vec3(0.020, 0.078, 0.137);
+      vec3 colorTop    = vec3(0.000, 0.020, 0.040);
+      vec3 color;
+      if (vertical < 0.4) {
+        color = mix(colorBottom, colorMid, smoothstep(0.0, 0.4, vertical));
+      } else {
+        color = mix(colorMid, colorTop, smoothstep(0.4, 1.0, vertical));
+      }
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `,
+  side: THREE.BackSide,
+  depthWrite: false,
+  fog: false,
+});
+scene.add(new THREE.Mesh(skyGeometry, skyMaterial));
+
+const composer = new THREE.EffectComposer(renderer);
+composer.setSize(1080, 1920);
+composer.addPass(new THREE.RenderPass(scene, camera));
+composer.addPass(new THREE.UnrealBloomPass(
+  new THREE.Vector2(1080, 1920),
+  0.9, 0.7, 0.55
+));
+
+// === Merkaba構造 ===
+const vertices = [];
+vertices.push(new THREE.Vector3(0, 0, 0));
+const a = 1;
+vertices.push(new THREE.Vector3( a,  a,  a));
+vertices.push(new THREE.Vector3( a, -a, -a));
+vertices.push(new THREE.Vector3(-a,  a, -a));
+vertices.push(new THREE.Vector3(-a, -a,  a));
+vertices.push(new THREE.Vector3(-a, -a, -a));
+vertices.push(new THREE.Vector3(-a,  a,  a));
+vertices.push(new THREE.Vector3( a, -a,  a));
+vertices.push(new THREE.Vector3( a,  a, -a));
+
+const tetraUpIndices   = [1, 2, 3, 4];
+const tetraDownIndices = [5, 6, 7, 8];
+
+const sphereRadius = Math.SQRT2 / 2;
+
+const sphereMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    colorA: { value: new THREE.Color(0xffffff) },
+    colorB: { value: new THREE.Color(0x4090c8) },
+    fogColor: { value: scene.fog.color },
+    fogNear: { value: scene.fog.near },
+    fogFar: { value: scene.fog.far },
+  },
+  vertexShader: `
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+    varying vec3 vLocalPos;
+    void main() {
+      vLocalPos = position;
+      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+      vViewPosition = -mvPosition.xyz;
+      vNormal = normalize(normalMatrix * normal);
+      gl_Position = projectionMatrix * mvPosition;
+    }
+  `,
+  fragmentShader: `
+    uniform vec3 colorA;
+    uniform vec3 colorB;
+    uniform vec3 fogColor;
+    uniform float fogNear;
+    uniform float fogFar;
+    varying vec3 vNormal;
+    varying vec3 vViewPosition;
+    varying vec3 vLocalPos;
+    float hash(vec3 p) {
+      p = fract(p * vec3(443.897, 441.423, 437.195));
+      p += dot(p, p.yzx + 19.19);
+      return fract((p.x + p.y) * p.z);
+    }
+    float noise3d(vec3 p) {
+      vec3 i = floor(p);
+      vec3 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      return mix(
+        mix(mix(hash(i), hash(i + vec3(1,0,0)), f.x),
+            mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x), f.y),
+        mix(mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
+            mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x), f.y),
+        f.z
+      );
+    }
+    void main() {
+      vec3 viewDir = normalize(vViewPosition);
+      float fresnel = 1.0 - abs(dot(viewDir, vNormal));
+      fresnel = pow(fresnel, 1.5);
+      float gradT = vNormal.y * 0.5 + 0.5;
+      vec3 baseColor = mix(colorA, colorB, gradT);
+      float n1 = noise3d(vLocalPos * 25.0);
+      float n2 = noise3d(vLocalPos * 60.0);
+      float grain = (n1 * 0.6 + n2 * 0.4);
+      vec3 finalColor = baseColor * (0.5 + grain * 0.8);
+      finalColor += baseColor * fresnel * 0.6;
+      float alpha = mix(0.08, 0.32, fresnel);
+      alpha *= (0.7 + grain * 0.5);
+      float fogDistance = length(vViewPosition);
+      float fogFactor = smoothstep(fogNear, fogFar, fogDistance);
+      finalColor = mix(finalColor, fogColor, fogFactor);
+      alpha *= (1.0 - fogFactor);
+      gl_FragColor = vec4(finalColor, alpha);
+    }
+  `,
+  transparent: true,
+  depthWrite: false,
+  side: THREE.DoubleSide,
+  blending: THREE.NormalBlending,
+});
+
+const sphereGroup = new THREE.Group();
+vertices.forEach((v) => {
+  const sphere = new THREE.Mesh(new THREE.SphereGeometry(sphereRadius, 48, 32), sphereMaterial);
+  sphere.position.copy(v);
+  sphere.renderOrder = 2;
+  sphereGroup.add(sphere);
+});
+
+const edgeGroup = new THREE.Group();
+const edgeMaterial = new THREE.LineBasicMaterial({
+  color: 0x80c8e8,
+  transparent: true,
+  opacity: 0.7,
+  fog: true,
+  depthTest: false,
+  depthWrite: false,
+  blending: THREE.AdditiveBlending,
+});
+
+function tetraEdges(indices) {
+  const edges = [];
+  for (let i = 0; i < indices.length; i++) {
+    for (let j = i + 1; j < indices.length; j++) {
+      edges.push([indices[i], indices[j]]);
+    }
+  }
+  return edges;
+}
+
+tetraEdges(tetraUpIndices).forEach(([i, j]) => {
+  const geom = new THREE.BufferGeometry().setFromPoints([vertices[i], vertices[j]]);
+  const line = new THREE.Line(geom, edgeMaterial);
+  line.renderOrder = 1;
+  edgeGroup.add(line);
+});
+tetraEdges(tetraDownIndices).forEach(([i, j]) => {
+  const geom = new THREE.BufferGeometry().setFromPoints([vertices[i], vertices[j]]);
+  const line = new THREE.Line(geom, edgeMaterial);
+  line.renderOrder = 1;
+  edgeGroup.add(line);
+});
+
+function createVertexGlowTexture() {
+  const size = 512;
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const cx = size / 2, cy = size / 2;
+
+  let gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, size / 2);
+  gradient.addColorStop(0.00, 'rgba(160, 220, 250, 0.85)');
+  gradient.addColorStop(0.05, 'rgba(120, 200, 245, 0.75)');
+  gradient.addColorStop(0.15, 'rgba(80, 175, 235, 0.55)');
+  gradient.addColorStop(0.30, 'rgba(50, 145, 220, 0.30)');
+  gradient.addColorStop(0.50, 'rgba(30, 115, 200, 0.12)');
+  gradient.addColorStop(0.75, 'rgba(15, 90, 175, 0.04)');
+  gradient.addColorStop(1.00, 'rgba(0, 70, 150, 0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.save();
+  ctx.translate(cx, cy);
+  for (let i = 0; i < 2; i++) {
+    ctx.rotate(Math.PI / 2);
+    const lineGrad = ctx.createLinearGradient(-cx, 0, cx, 0);
+    lineGrad.addColorStop(0.00, 'rgba(120, 200, 250, 0)');
+    lineGrad.addColorStop(0.40, 'rgba(120, 200, 250, 0)');
+    lineGrad.addColorStop(0.48, 'rgba(160, 220, 250, 0.4)');
+    lineGrad.addColorStop(0.50, 'rgba(200, 235, 255, 0.6)');
+    lineGrad.addColorStop(0.52, 'rgba(160, 220, 250, 0.4)');
+    lineGrad.addColorStop(0.60, 'rgba(120, 200, 250, 0)');
+    lineGrad.addColorStop(1.00, 'rgba(120, 200, 250, 0)');
+    ctx.fillStyle = lineGrad;
+    ctx.fillRect(-cx, -2, size, 4);
+  }
+  ctx.restore();
+
+  gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, size * 0.025);
+  gradient.addColorStop(0.0, 'rgba(200, 235, 255, 0.7)');
+  gradient.addColorStop(1.0, 'rgba(160, 220, 250, 0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+
+  return new THREE.CanvasTexture(canvas);
+}
+
+const vertexGlowMaterial = new THREE.SpriteMaterial({
+  map: createVertexGlowTexture(),
+  transparent: true,
+  opacity: 1.0,
+  blending: THREE.AdditiveBlending,
+  depthTest: false,
+  depthWrite: false,
+});
+
+const vertexGlowGroup = new THREE.Group();
+vertices.forEach((v) => {
+  const sprite = new THREE.Sprite(vertexGlowMaterial);
+  sprite.position.copy(v);
+  sprite.scale.set(1.4, 1.4, 1.4);
+  sprite.renderOrder = 5;
+  vertexGlowGroup.add(sprite);
+});
+
+function createEdgeGlowTexture() {
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const cx = size / 2, cy = size / 2;
+
+  const gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, size / 2);
+  gradient.addColorStop(0.00, 'rgba(100, 175, 225, 0.20)');
+  gradient.addColorStop(0.30, 'rgba(70, 145, 205, 0.10)');
+  gradient.addColorStop(0.60, 'rgba(40, 115, 185, 0.03)');
+  gradient.addColorStop(1.00, 'rgba(30, 100, 180, 0)');
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, size, size);
+
+  return new THREE.CanvasTexture(canvas);
+}
+
+const edgeGlowMaterial = new THREE.SpriteMaterial({
+  map: createEdgeGlowTexture(),
+  transparent: true,
+  opacity: 1.0,
+  blending: THREE.AdditiveBlending,
+  depthTest: false,
+  depthWrite: false,
+});
+
+const edgeGlowGroup = new THREE.Group();
+function addEdgeGlows(indices) {
+  tetraEdges(indices).forEach(([i, j]) => {
+    const a = vertices[i], b = vertices[j];
+    const mid = new THREE.Vector3().addVectors(a, b).multiplyScalar(0.5);
+    const sprite = new THREE.Sprite(edgeGlowMaterial);
+    sprite.position.copy(mid);
+    sprite.scale.set(1.2, 1.2, 1.2);
+    sprite.renderOrder = 4;
+    edgeGlowGroup.add(sprite);
+  });
+}
+addEdgeGlows(tetraUpIndices);
+addEdgeGlows(tetraDownIndices);
+
+const rootGroup = new THREE.Group();
+rootGroup.add(edgeGlowGroup);
+rootGroup.add(edgeGroup);
+rootGroup.add(sphereGroup);
+rootGroup.add(vertexGlowGroup);
+scene.add(rootGroup);
+
+// シネマティック・カメラワーク（30秒、7フェーズ、シームレス旋回）
+function easeInOutCubic(t) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+function easeOutCubic(t) {
+  return 1 - Math.pow(1 - t, 3);
+}
+function easeInCubic(t) {
+  return t * t * t;
+}
+function easeInOutQuad(t) {
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
+// ★ linear: 等速移動（宇宙船の慣性運動）
+function linear(t) { return t; }
+function lerp(a, b, t) { return a + (b - a) * t; }
+
+// ============================================================
+// ★ シームレス・シネマティック・カメラワーク（30秒）
+//
+// 設計原則：
+//   - 基本はlinear（等速）= 宇宙船の慣性運動
+//   - 加速必要時のみ easeIn（Phase 3 突入）
+//   - 減速必要時のみ easeOut（Phase 7 停止）
+//   - フェーズ境界の速度を連続させて「止まらない」カメラを実現
+//
+// 開始：六芒星(Star of David)が最も明確に見える角度
+//   rotX = 0.25, rotY = 0.78 (≈ π/4)
+//
+// 距離設計：
+//   中心球半径 0.707、頂点距離 √3 ≈ 1.732
+//   内部視点の理想距離 = 0.85〜1.3
+// ============================================================
+const SEQUENCE = [
+  // Phase 1: Reveal — 等速で接近、構造を提示
+  {
+    start: 0.0, end: 4.0,
+    distFrom: 6.0, distTo: 4.0,
+    rotXFrom: 0.25, rotXTo: 0.4,
+    rotYFrom: 0.78, rotYTo: 1.4,
+    easing: linear,  // 等速：宇宙船が一定速度で接近
+  },
+  // Phase 2: Spiral In — 等速で螺旋
+  {
+    start: 4.0, end: 9.0,
+    distFrom: 4.0, distTo: 1.5,
+    rotXFrom: 0.4, rotXTo: 0.2,
+    rotYFrom: 1.4, rotYTo: 3.5,
+    easing: linear,  // 等速：螺旋運動は連続的
+  },
+  // Phase 3: Approach — 加速して中心球へ突入
+  {
+    start: 9.0, end: 12.0,
+    distFrom: 1.5, distTo: 0.9,
+    rotXFrom: 0.2, rotXTo: 0.4,
+    rotYFrom: 3.5, rotYTo: 4.2,
+    easing: easeInCubic,  // 加速：吸い込まれる感覚
+  },
+  // Phase 4: Inside View — 等速で内部旋回
+  {
+    start: 12.0, end: 18.0,
+    distFrom: 0.9, distTo: 1.2,
+    rotXFrom: 0.4, rotXTo: 0.3,
+    rotYFrom: 4.2, rotYTo: 7.5,
+    easing: linear,  // 等速：内部空間を浮遊
+  },
+  // Phase 5: Pull Out — 等速で離脱（Phase 3の加速と対称的に、急速だが等速）
+  {
+    start: 18.0, end: 22.0,
+    distFrom: 1.2, distTo: 4.5,
+    rotXFrom: 0.3, rotXTo: 0.35,
+    rotYFrom: 7.5, rotYTo: 9.2,
+    easing: linear,  // 等速：解放された後の慣性
+  },
+  // Phase 6: Final Orbit — 等速で全景軌道
+  {
+    start: 22.0, end: 27.0,
+    distFrom: 4.5, distTo: 6.0,
+    rotXFrom: 0.35, rotXTo: 0.25,
+    rotYFrom: 9.2, rotYTo: 10.5,
+    easing: linear,  // 等速：軌道運動
+  },
+  // Phase 7: Closing — 減速して停止
+  {
+    start: 27.0, end: 30.0,
+    distFrom: 6.0, distTo: 6.5,
+    rotXFrom: 0.25, rotXTo: 0.3,
+    rotYFrom: 10.5, rotYTo: 10.78,
+    easing: easeOutCubic,  // 減速：静かに停止
+  },
+];
+
+const TOTAL_DURATION = 30.0;
+
+// UIは最初から表示（各フェーズがポスターデザインとして成立する設計）
+const UI_FADE_SCHEDULE = [
+  { time: 0.0, element: 'ui-title' },
+  { time: 0.0, element: 'ui-meta' },
+  { time: 0.0, element: 'ui-code' },
+  { time: 0.0, element: 'ui-url' },
+];
+
+function computeCameraState(t) {
+  const phase = SEQUENCE.find(p => t >= p.start && t < p.end) || SEQUENCE[SEQUENCE.length - 1];
+  let localT;
+  if (t >= TOTAL_DURATION) {
+    localT = 1;
+  } else {
+    localT = (t - phase.start) / (phase.end - phase.start);
+    localT = Math.max(0, Math.min(1, localT));
+  }
+  const eased = phase.easing(localT);
+  return {
+    distance: lerp(phase.distFrom, phase.distTo, eased),
+    rotX: lerp(phase.rotXFrom, phase.rotXTo, eased),
+    rotY: lerp(phase.rotYFrom, phase.rotYTo, eased),
+  };
+}
+
+let demoStartTime = null;
+let demoRunning = false;
+const triggeredFades = new Set();
+
+function startDemo() {
+  document.querySelectorAll('.ui-element').forEach(el => el.classList.remove('visible'));
+  triggeredFades.clear();
+  demoStartTime = performance.now();
+  demoRunning = true;
+  startBtn.textContent = '● RECORDING';
+  startBtn.classList.add('recording');
+}
+
+function stopDemo() {
+  demoRunning = false;
+  startBtn.textContent = '▶ START DEMO';
+  startBtn.classList.remove('recording');
+}
+
+startBtn.addEventListener('click', () => {
+  if (demoRunning) stopDemo(); else startDemo();
+});
+
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (demoRunning) stopDemo(); else startDemo();
+  }
+});
+
+// ============================================================
+// ★ モバイルモード：画面タップで開始/停止
+// ============================================================
+if (isMobileMode) {
+  // タップヒントの表示制御
+  function startDemoMobile() {
+    mobileTapHint.classList.add('hidden');
+    startDemo();
+  }
+  function stopDemoMobile() {
+    stopDemo();
+    mobileTapHint.classList.remove('hidden');
+  }
+
+  // 画面タップで開始/停止
+  document.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    if (demoRunning) {
+      stopDemoMobile();
+    } else {
+      startDemoMobile();
+    }
+  }, { passive: false });
+
+  // クリックでも対応（PCシミュレーション用）
+  document.addEventListener('click', (e) => {
+    if (demoRunning) {
+      stopDemoMobile();
+    } else {
+      startDemoMobile();
+    }
+  });
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+
+  let t = 0;
+  if (demoRunning && demoStartTime !== null) {
+    t = (performance.now() - demoStartTime) / 1000;
+    if (t >= TOTAL_DURATION) {
+      t = TOTAL_DURATION;
+      demoRunning = false;
+      startBtn.textContent = '▶ START DEMO';
+      startBtn.classList.remove('recording');
+      // モバイルモード時はタップヒントを再表示
+      if (isMobileMode && mobileTapHint) {
+        mobileTapHint.classList.remove('hidden');
+      }
+    }
+    UI_FADE_SCHEDULE.forEach(schedule => {
+      if (t >= schedule.time && !triggeredFades.has(schedule.element)) {
+        document.getElementById(schedule.element).classList.add('visible');
+        triggeredFades.add(schedule.element);
+      }
+    });
+  }
+
+  timerEl.textContent = t.toFixed(2) + 's';
+
+  const state = computeCameraState(t);
+  rootGroup.rotation.x = state.rotX;
+  rootGroup.rotation.y = state.rotY;
+  camera.position.set(0, 0, state.distance);
+  camera.lookAt(0, 0, 0);
+
+  composer.render();
+}
+animate();
+
+const initialState = computeCameraState(0);
+rootGroup.rotation.x = initialState.rotX;
+rootGroup.rotation.y = initialState.rotY;
+camera.position.set(0, 0, initialState.distance);
+</script>
+</body>
+</html>
