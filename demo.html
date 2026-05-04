@@ -314,17 +314,10 @@
     touch-action: manipulation;
   }
 
-  body.mobile-mode #stage-wrapper {
-    /* JSで動的サイズ設定するが、デフォルトで全画面 */
-    width: 100vw;
-    height: 100vh;
-    transform: none !important;  /* スケール変換は不要（直接サイズ調整） */
-  }
-
-  body.mobile-mode #stage {
-    width: 100%;
-    height: 100%;
-  }
+  /* モバイルモードでも #stage-wrapper は 1080×1920 のまま。
+     JS の Math.min(scaleX, scaleY) による uniform scale で 9:16 を維持し、
+     画面が 9:16 より縦長な端末（iPhone 等）では上下にレターボックスが入る。
+     iPhone 画面録画 → Instagram Reels の 9:16 クロップで letterbox は自然に消える。 */
 
   /* モバイルモードでは全デバッグUIを完全非表示 */
   body.mobile-mode #start-btn,
